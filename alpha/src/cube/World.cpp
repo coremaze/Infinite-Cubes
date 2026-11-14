@@ -2075,6 +2075,7 @@ void World::dropLoot(Creature *creature, std::set<Zone *> *changedZones)
         (rand() % 4 == 0 || (creature->m_entityData.appearance.appearanceFlags & (1 << AppearanceFlagTinted)))) {
         plasma::Vector<3, Fixed> offset(plasma::Vector<3, float>(1.0f - rand() * 2.0f / float(RAND_MAX),
                                                                  1.0f - rand() * 2.0f / float(RAND_MAX), 0.0f));
+        // Each offset below draws x, then y; here the original draws the index, then the rotation.
         dropItem(*worn[rand() % worn.size()], creature->m_entityData.position + offset,
                  rand() * 360.0f / float(RAND_MAX), 1.0f, changedZones);
     }
@@ -2246,6 +2247,7 @@ void World::dropLoot(Creature *creature, std::set<Zone *> *changedZones)
         if (rand() % 50 == 0) {
             plasma::Vector<3, Fixed> offset(plasma::Vector<3, float>(1.0f - rand() * 2.0f / float(RAND_MAX),
                                                                      1.0f - rand() * 2.0f / float(RAND_MAX), 0.0f));
+            // The original draws the rotation first, then randomRarity and randomFormula draw.
             dropItem(
                 randomFormula(creature->m_entityData.level, randomRarity(creature->m_entityData.rarity + 1, false)),
                 creature->m_entityData.position + offset, rand() * 360.0f / float(RAND_MAX), 0.75f, changedZones);

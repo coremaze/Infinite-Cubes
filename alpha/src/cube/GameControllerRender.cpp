@@ -198,9 +198,10 @@ void GameController::render()
                     } else if (plant->type == PlantBirdAndOwlEmitter) {
                         if (callPeriod(plant->position, clock, 1000) !=
                                 callPeriod(plant->position, clock + m_frameMilliseconds, 1000) &&
-                            rand() % 10 == 0)
-                            playSound(rand() % 2 + SoundOwl1, plant->position, 0.1f,
-                                      rand() * 0.2f / float(RAND_MAX) + 0.5f);
+                            rand() % 10 == 0) {
+                            float speed = rand() * 0.2f / float(RAND_MAX) + 0.5f;
+                            playSound(rand() % 2 + SoundOwl1, plant->position, 0.1f, speed);
+                        }
                         continue;
                     }
                     if (m_world.m_time > 43200000 && m_world.m_time < 86400000) {
@@ -840,9 +841,11 @@ void GameController::render()
                             Particle mote;
                             mote.age = 0;
                             mote.position = plant->position;
+                            // The original draws y, x in that order.
                             mote.velocity = 4.0f * plasma::Vector<3, float>(rand() / float(RAND_MAX) - 0.5f,
                                                                             rand() / float(RAND_MAX) - 0.5f, -0.5f);
                             mote.rotation = plasma::Vector<3, float>(0.0f, 0.0f, 0.0f);
+                            // The original draws z, y, x in that order.
                             mote.spin = 10.0f * plasma::Vector<3, float>(rand() / float(RAND_MAX) - 0.5f,
                                                                          rand() / float(RAND_MAX) - 0.5f,
                                                                          rand() / float(RAND_MAX) - 0.5f);

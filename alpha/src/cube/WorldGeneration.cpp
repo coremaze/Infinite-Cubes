@@ -1717,6 +1717,7 @@ void World::generateDungeon(Zone *zone, Region *region, int x, int y, int varian
         for (int ry = 0; ry < 3; ry++) {
             // Dungeon room lattice: random size and cell offsets for each room before corridor linking.
             for (int rz = 0; rz < 3; rz++) {
+                // The original draws z, y, x in that order for both vectors.
                 rooms[rx][ry][rz].size = plasma::Vector<3, int>(rand() % 3 - 1, rand() % 3 - 1, rand() % 3);
                 rooms[rx][ry][rz].offset = plasma::Vector<3, int>(rand() % 2, rand() % 2, rand() % 3 - 1);
             }
@@ -1904,7 +1905,9 @@ void World::generateDungeon(Zone *zone, Region *region, int x, int y, int varian
     dungeon.m_reflectY = rand() % 2 == 0;
     bool palace = variant == Region::Record::DungeonPalace;
 
-    // Dungeon roof/wall/floor palette by variant. Block colours and lighting by variant.
+    // Dungeon roof/wall/floor palette by variant.
+    // Block colours and lighting by variant.
+    // The original draws b, g, r in that order for every colour of this function.
     plasma::Vector<3, unsigned char> roofColor(rand() % 50 + 20, rand() % 50 + 20, rand() % 50 + 20);
     int brightness = rand() % 50;
     if (variant == Region::Record::DungeonPalace)
@@ -2559,6 +2562,7 @@ void World::generateDungeon(Zone *zone, Region *region, int x, int y, int varian
                                     // Ceiling and wall plant layout: cell-relative coordinates and sprite extent scaling.
                                     plant.scale = rand() * 0.04f / float(RAND_MAX) + 0.08f;
                                     // Dungeon layout: cell-relative room, corridor and entrance offsets in the ten-block grid.
+                                    // The original draws y, x in that order.
                                     plant.position = plasma::Vector<3, Fixed>(
                                         x + cx * 10 + 2 + rand() % 5, y + cy * 10 + 2 + rand() % 5,
                                         (float)(bestDepth + (cz + 1) * 10) - plant.scale * 20.0f);
@@ -3505,10 +3509,11 @@ World::RegionRecord *World::generateRegionRecord(int x, int y)
     }
     if (atSpawn)
         record->column = plasma::Vector<2, int>((int)m_spawnPoint[0], (int)m_spawnPoint[1]);
-    else // arguments are evaluated right to left: y's offset is drawn first
-        record->column =
-            plasma::Vector<2, int>(x * BlocksPerRegion + LandscapeCenterMargin + rand() % LandscapeCenterRandomRange,
-                                   y * BlocksPerRegion + rand() % LandscapeCenterRandomRange + LandscapeCenterMargin);
+    else {
+        int columnY = y * BlocksPerRegion + rand() % LandscapeCenterRandomRange + LandscapeCenterMargin;
+        int columnX = x * BlocksPerRegion + LandscapeCenterMargin + rand() % LandscapeCenterRandomRange;
+        record->column = plasma::Vector<2, int>(columnX, columnY);
+    }
     record->column[0] = record->column[0] / 2048 * 2048 + 1024;
     // Noise field coefficients: coordinate frequency, independent channel offsets and output
     // amplitude.
@@ -4032,9 +4037,9 @@ void World::populateRegion(int x, int y, ServerUpdates *updates)
                 record->monster.level = rand() % (maximumLevel - minimumLevel + 1) + minimumLevel;
                 record->monster.rarity = ItemRarityWhite;
                 record->monster.race = randomMonsterRace(x, y, record->monster.level);
-                record->monster.zone = plasma::Vector<2, int>(
-                    square[0] * ZonesPerSceneryRecord + 2 + rand() % MonsterTargetZoneRandomRange,
-                    square[1] * ZonesPerSceneryRecord + 2 + rand() % MonsterTargetZoneRandomRange);
+                int zoneY = square[1] * ZonesPerSceneryRecord + 2 + rand() % MonsterTargetZoneRandomRange;
+                int zoneX = square[0] * ZonesPerSceneryRecord + 2 + rand() % MonsterTargetZoneRandomRange;
+                record->monster.zone = plasma::Vector<2, int>(zoneX, zoneY);
                 monsterSquares.push_back(square);
             }
             if (record->kind != Region::Record::SceneryNone && record->kind != Region::Record::SceneryPortal &&
@@ -5063,6 +5068,7 @@ void World::buildTree(int x, int y, int z, int radius, int height, int kind, Zon
     float green = temperature * 50.0f + 120.0f;
     float blue = temperature * 100.0f + 50.0f;
     // The trunk's colours at its foot and at its top.
+    // The original draws g, b in that order for both colours.
     plasma::Vector<3, float> trunkFoot(240.0f, green + rand() % 80, blue + rand() % 50);
     plasma::Vector<3, float> trunkTop(240.0f, green + rand() % 80, blue + rand() % 50);
     // Trunk shape profile: palm height/radius transforms, per-kind radius overrides and minimum
@@ -5110,6 +5116,7 @@ void World::buildTree(int x, int y, int z, int radius, int height, int kind, Zon
         // Tree trunk and leaf palette by climate/kind.
         temperature = 1.0f;
     if (greenChance > rand() / float(RAND_MAX) || kind == 4 || kind == 3) {
+        // The original draws r, g, b in that order for every leaf colour below.
         leaves = plasma::Vector<3, float>(rand() % 20, rand() % 155 + 50, rand() % 100);
         leaves = clampChannels(leaves);
         float light = rand() % 100 + 50;
@@ -5502,6 +5509,7 @@ void World::buildTree(int x, int y, int z, int radius, int height, int kind, Zon
                 if (length > 10) {
                     // Foliage on both sides of the branch, more of it further out.
                     for (int tries = 5; tries > 0; tries--) {
+                        // The original draws inner, radius, z, y, x in that order for both calls.
                         if (rand() % 120 < length - 10)
                             growFoliage((int)(rand() % 20 + point[0] - 10.0 + sideX * 4.0f),
                                         (int)(rand() % 20 + point[1] - 10.0 + sideY * 4.0f),
@@ -5533,6 +5541,7 @@ void World::buildTree(int x, int y, int z, int radius, int height, int kind, Zon
         // from the rim inwards, shaded from the needle colour at the trunk to the tip colour at the rim,
         // snowy in cold columns; two needle blocks on top.
         float angle = (float)(rand() * 6.283185307179586 / double(RAND_MAX));
+        // The original draws b, g, r in that order for both colours.
         plasma::Vector<3, float> needles(
             plasma::Vector<3, unsigned char>(rand() % 100, rand() % 50 + 100, rand() % 100));
         plasma::Vector<3, float> tips(plasma::Vector<3, unsigned char>(rand() % 100, rand() % 50 + 100, rand() % 100));

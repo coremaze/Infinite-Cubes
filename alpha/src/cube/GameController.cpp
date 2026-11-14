@@ -2862,10 +2862,10 @@ void GameController::createParticles(Sprite *sprite, const plasma::Matrix<float>
                 plasma::Vector<3, Fixed> centerPosition(center);
                 particle.velocity = (particle.position - centerPosition) * Fixed(2.0f);
                 particle.rotation = plasma::Vector<3, float>(0.0f, 0.0f, 0.0f);
-                particle.spin = plasma::Vector<3, float>((float)rand() / float(RAND_MAX) - 0.5f,
-                                                         (float)rand() / float(RAND_MAX) - 0.5f,
-                                                         (float)rand() / float(RAND_MAX) - 0.5f) *
-                                100.0f;
+                float spinX = (float)rand() / float(RAND_MAX) - 0.5f;
+                float spinY = (float)rand() / float(RAND_MAX) - 0.5f;
+                float spinZ = (float)rand() / float(RAND_MAX) - 0.5f;
+                particle.spin = plasma::Vector<3, float>(spinX, spinY, spinZ) * 100.0f;
                 particle.color =
                     plasma::Vector<4, float>(voxel[0] / 255.0f, voxel[1] / 255.0f, voxel[2] / 255.0f, 1.0f) * color;
                 particle.size = 1.0f;
@@ -3955,7 +3955,7 @@ void GameController::handleButtonDown(int button)
                         if (m_player->m_inventory
                                 .m_inventoryTabs[m_enchantWidget->m_inventoryTabIndex]
                                                 [m_enchantWidget->m_inventoryItemIndex]
-                                .quantity == 0)
+                                .quantity != 0)
                             m_enchantWidget->SetInventoryItem(-1, -1);
                         int count = rand() % 6 + 5;
                         Item spirit;
@@ -3966,6 +3966,7 @@ void GameController::handleButtonDown(int button)
                         m_spiritTimer = 0;
                         playSound(SoundDisenchant2, m_player->m_entityData.position, 1.0f, 1.0f);
                     }
+                    // After the reset above the indices are -1: this reads outside the inventory (as the original).
                     m_player->m_inventory
                         .m_inventoryTabs[m_enchantWidget->m_inventoryTabIndex][m_enchantWidget->m_inventoryItemIndex]
                         .removeOne();
@@ -7546,7 +7547,8 @@ void GameController::update(int milliseconds)
             ItemStack &stack = m_player->m_inventory.m_inventoryTabs[slot[0]][slot[1]];
             if (stack.item.level > m_player->m_entityData.level)
                 playSound(SoundHumanVoice02, m_cameraPosition, 1.0f, 1.0f);
-            useItem(&m_player->m_inventory.m_inventoryTabs[slot[0]][slot[1]]);
+            else
+                useItem(&m_player->m_inventory.m_inventoryTabs[slot[0]][slot[1]]);
         }
         useWasDown = m_inputs[InputKeyQ];
         slot = usable[selected % usable.size()];
@@ -7989,8 +7991,9 @@ void GameController::update(int milliseconds)
             if (m_world.creatureByID(it->targetId) == m_player) {
                 damageText.rise = 100.0f;
                 damageText.position[2] -= Fixed(1);
+            } else {
+                damageText.rise = -100.0f;
             }
-            damageText.rise = -100.0f;
         } else if (m_world.creatureByID(it->targetId) == m_player) {
             damageText.color = plasma::Vector<4, float>(1.0f, 0.3f, 0.3f, 1.0f);
             damageText.rise = 100.0f;
@@ -8009,17 +8012,19 @@ void GameController::update(int milliseconds)
         if (it->critical)
             damageText.pixelSize = 60.0f;
         std::wstringstream text;
-        if (it->hitType == HitTypeBlock)
+        if (it->hitType == HitTypeBlock) {
             text << "BLOCK" << std::endl;
-        if (it->hitType == HitTypeMiss)
+        } else if (it->hitType == HitTypeMiss) {
             text << "MISS" << std::endl;
-        if (it->hitType == HitTypeMana)
+        } else if (it->hitType == HitTypeMana) {
             text << "ABSORB" << std::endl;
-        float amount = fabs(it->damage);
-        if (1.0f > amount)
-            text << (float)(int)(amount * 10.0f) * 0.1f;
-        else
-            text << (int)amount;
+        } else {
+            float amount = fabs(it->damage);
+            if (1.0f > amount)
+                text << (float)(int)(amount * 10.0f) * 0.1f;
+            else
+                text << (int)amount;
+        }
         damageText.text = text.str();
         m_textFx.push_back(damageText);
     }
@@ -8033,11 +8038,13 @@ void GameController::update(int milliseconds)
             particle.type = it->type;
             particle.age = 0;
             particle.position = it->position;
+            // The original draws z, y, x in that order.
             particle.velocity = it->acceleration + it->spread * 2.0f *
                                                        plasma::Vector<3, float>(rand() / float(RAND_MAX) - 0.5f,
                                                                                 rand() / float(RAND_MAX) - 0.5f,
                                                                                 rand() / float(RAND_MAX) - 0.5f);
             particle.rotation = plasma::Vector<3, float>(0.0f, 0.0f, 0.0f);
+            // The original draws z, y, x in that order.
             particle.spin =
                 100.0f * plasma::Vector<3, float>(rand() / float(RAND_MAX) - 0.5f, rand() / float(RAND_MAX) - 0.5f,
                                                   rand() / float(RAND_MAX) - 0.5f);
@@ -8557,21 +8564,25 @@ void GameController::update(int milliseconds)
             m_selector->setText(L"count", L"", true);
         }
     } else if (m_conversationWidget && m_conversationWidget->getNode()->isVisible() &&
-               !m_conversationWidget->m_choices.empty() && m_conversationWidget->isDialogFinished()) {
-        // A finished conversation's choices: A and D (on their press) move the highlight round the choices
-        // (sound 54).
+               !m_conversationWidget->m_choices.empty()) {
+        // 0x497f27: a conversation with choices holds the player still;
+        // once its text is out, A and D (on their press) move the
+        // highlight round the choices (sound 54).
         static bool choiceLeftWasDown;
         static bool choiceRightWasDown;
-        if (m_inputs[InputKeyA] && !choiceLeftWasDown) {
-            SpeechWidget *conversation = m_conversationWidget;
-            conversation->m_hoveredChoice = (int)((conversation->m_hoveredChoice + conversation->m_choices.size() - 1) %
-                                                  conversation->m_choices.size());
-            playSound(SoundLever, m_cameraPosition, 1.0f, 1.0f);
-        }
-        if (m_inputs[InputKeyD] && !choiceRightWasDown) {
-            m_conversationWidget->m_hoveredChoice =
-                (m_conversationWidget->m_hoveredChoice + 1) % m_conversationWidget->m_choices.size();
-            playSound(SoundLever, m_cameraPosition, 1.0f, 1.0f);
+        if (m_conversationWidget->isDialogFinished()) {
+            if (m_inputs[InputKeyA] && !choiceLeftWasDown) {
+                SpeechWidget *conversation = m_conversationWidget;
+                conversation->m_hoveredChoice =
+                    (int)((conversation->m_hoveredChoice + conversation->m_choices.size() - 1) %
+                          conversation->m_choices.size());
+                playSound(SoundLever, m_cameraPosition, 1.0f, 1.0f);
+            }
+            if (m_inputs[InputKeyD] && !choiceRightWasDown) {
+                m_conversationWidget->m_hoveredChoice =
+                    (m_conversationWidget->m_hoveredChoice + 1) % m_conversationWidget->m_choices.size();
+                playSound(SoundLever, m_cameraPosition, 1.0f, 1.0f);
+            }
         }
         choiceLeftWasDown = m_inputs[InputKeyA];
         choiceRightWasDown = m_inputs[InputKeyD];

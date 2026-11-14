@@ -648,6 +648,7 @@ void fillAppearance(int &race, Creature::Appearance &appearance, const Creature:
     Creature::CharacterStyle randomStyle;
     const Creature::CharacterStyle *style = playerStyle;
     if (!style) {
+        // The original draws b, g, r in that order.
         randomStyle.hairColor = plasma::Vector<3, unsigned char>(rand() % 256, rand() % 256, rand() % 256);
         randomStyle.face = rand() % CharacterStyleChoiceCount;
         randomStyle.haircut = rand() % CharacterStyleChoiceCount;
@@ -776,8 +777,11 @@ void fillAppearance(int &race, Creature::Appearance &appearance, const Creature:
         appearance.weaponScale = 1.2f;
         appearance.size /= 1.2f;
         break;
-    case RaceBullterrier:
-        appearance.hairColor = plasma::Vector<3, unsigned char>(rand() % 256, rand() % 256, rand() % 256);
+    case RaceBullterrier: {
+        int blue = rand() % 256;
+        int green = rand() % 256;
+        int red = rand() % 256;
+        appearance.hairColor = plasma::Vector<3, unsigned char>(red, green, blue);
         appearance.headModel = rand() % BullterrierHead1VariantCount + SpriteBullterrierHead1;
         appearance.chestModel = SpriteBody2Slot0;
         appearance.feetModel = SpriteFoot;
@@ -786,6 +790,7 @@ void fillAppearance(int &race, Creature::Appearance &appearance, const Creature:
         appearance.headScale = 0.9f;
         appearance.weaponScale = 1.2f;
         break;
+    }
     case RaceLizardmanMale:
         appearance.hairColor = style->hairColor;
         appearance.headModel = style->face % LizardHeadM01VariantCount + SpriteLizardHeadM01;
@@ -1458,8 +1463,11 @@ void fillAppearance(int &race, Creature::Appearance &appearance, const Creature:
         appearance.size = plasma::Vector<3, float>(1.0f, 1.0f, 1.1f);
         appearance.appearanceFlags |= ((1 << AppearanceFlagBiteAttack) | (1 << AppearanceFlagUnarmored));
         break;
-    case RaceOgre:
-        appearance.hairColor = plasma::Vector<3, unsigned char>(rand() % 256, rand() % 256, rand() % 256);
+    case RaceOgre: {
+        int blue = rand() % 256;
+        int green = rand() % 256;
+        int red = rand() % 256;
+        appearance.hairColor = plasma::Vector<3, unsigned char>(red, green, blue);
         appearance.headModel = SpriteOgreHead;
         appearance.chestModel = SpriteOgreBody;
         appearance.feetModel = SpriteOgreFoot;
@@ -1471,6 +1479,7 @@ void fillAppearance(int &race, Creature::Appearance &appearance, const Creature:
         appearance.size = plasma::Vector<3, float>(0.8f, 0.8f, 1.8f) * 3.0f;
         appearance.appearanceFlags |= (1 << AppearanceFlagUnarmored);
         break;
+    }
     case RaceRockling:
         appearance.headModel = SpriteRocklingHead;
         appearance.feetModel = SpriteRocklingFoot;
@@ -3168,11 +3177,13 @@ int Creature::power()
 
 float itemPowerScale(float level, int rarity)
 {
+    // VC11's x86 powf is (float)pow((double)x, (double)y): the original calls the double pow.
     return powf(2.0f, (1.0f - 1.0f / ((level - 1.0f) * 0.05f + 1.0f)) * 3.0f) * powf(2.0f, 0.25f * rarity);
 }
 
 float itemDamageScale(float level, int rarity)
 {
+    // VC11's x86 powf is (float)pow((double)x, (double)y): the original calls the double pow.
     return powf(2.0f, (1.0f - 1.0f / ((level - 1.0f) * 0.05f + 1.0f)) * 3.0f) * powf(2.0f, 0.25f * rarity) /
            powf(2.0f, 3.0f);
 }

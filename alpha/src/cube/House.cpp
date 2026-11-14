@@ -2509,6 +2509,7 @@ bool World::generateHouse(Zone *zone, Region::Record *record)
                     used = true;
                     const float temperature = terrainTemperature(sampleX, sampleY, zone);
                     // Plaza tree silhouette: random radius and height ranges, with climate selecting the tree kind.
+                    // The original draws the height (rand() % 8) before the radius.
                     if (top > 1)
                         buildTree(sampleX, sampleY, top + 1, rand() % 6 + 7, rand() % 8 + HouseCellWidth,
                                   temperature > 0.8f ? 3 : 5, zone);

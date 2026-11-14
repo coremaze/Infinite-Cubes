@@ -763,6 +763,7 @@ void World::update(int milliseconds, ServerUpdates *outgoing, ServerUpdates *inc
                     up = 5.0f;
                     if (object.type == StaticObjectStompTrap)
                         push *= 2.0f;
+                    // powf here and below is VC11's out-of-line (float)pow((double)x, (double)y).
                     float damage = powf(2.0f, (float)(levelAt(position[0], position[1]) - 1) * 0.25f) * 10.0f;
                     if (object.type == StaticObjectStompTrap)
                         damage *= 5.0f;
@@ -1444,11 +1445,12 @@ void World::update(int milliseconds, ServerUpdates *outgoing, ServerUpdates *inc
                              stack++) {
                             ItemStack &entry = *stack;
                             while (entry.quantity != 0) {
-                                dropItem(entry.item,
-                                         object.position + plasma::Vector<3, Fixed>(plasma::Vector<3, float>(
-                                                               2.0f - (float)rand() * 4.0f / float(RAND_MAX),
-                                                               2.0f - (float)rand() * 4.0f / float(RAND_MAX), 0.0f)),
-                                         (float)rand() * 360.0f / float(RAND_MAX), 1.0f, &changedZones);
+                                // The original draws y, x (the offset is built first), then the rotation.
+                                plasma::Vector<3, Fixed> offset(
+                                    plasma::Vector<3, float>(2.0f - (float)rand() * 4.0f / float(RAND_MAX),
+                                                             2.0f - (float)rand() * 4.0f / float(RAND_MAX), 0.0f));
+                                dropItem(entry.item, object.position + offset, (float)rand() * 360.0f / float(RAND_MAX),
+                                         1.0f, &changedZones);
                                 entry.removeOne();
                             }
                         }
