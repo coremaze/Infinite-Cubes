@@ -1,6 +1,6 @@
 # Cube World Alpha
 
-`Cube.exe` and `Server.exe` of the Cube World Alpha (2013-07-20), Windows x86..
+`Cube.exe` and `Server.exe` of the Cube World Alpha (2013-07-20), Windows x86.
 
 ## Requirements
 

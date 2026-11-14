@@ -1,6 +1,6 @@
 # Cube World
 
-`cubeworld.exe` of Cube World 1.0.0-1, Windows x64..
+`cubeworld.exe` of Cube World 1.0.0-1, Windows x64.
 
 ## Requirements
 
